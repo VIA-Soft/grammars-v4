@@ -39,7 +39,7 @@ tsql_file
 
 batch
     : go_statement
-    | execute_body_batch? (go_statement | sql_clauses+) go_statement*
+    | execute_body_batch? (go_statement? sql_clauses+) go_statement*
     | batch_level_statement go_statement*
     ;
 
@@ -2982,9 +2982,16 @@ declare_statement
     : DECLARE LOCAL_ID AS? (data_type | table_type_definition | table_name)
     | DECLARE loc += declare_local (',' loc += declare_local)*
     | DECLARE LOCAL_ID AS? xml_type_definition
-    | WITH XMLNAMESPACES '(' xml_dec += xml_declaration (',' xml_dec += xml_declaration)* ')'
+    | WITH with_xmlnamespaces
     ;
 
+with_xmlnamespaces
+    : WITH XMLNAMESPACES '(' xmlnamespaces_element (',' xmlnamespaces_element)* ')' (',' common_table_expression)*
+    ;
+
+    xmlnamespaces_element
+        : STRING AS column_alias
+        ;
 xml_declaration
     : xml_namespace_uri = STRING AS id_
     | DEFAULT STRING
@@ -3953,7 +3960,9 @@ subquery
 
 // https://msdn.microsoft.com/en-us/library/ms175972.aspx
 with_expression
-    : WITH ctes += common_table_expression (',' ctes += common_table_expression)*
+    : ( with_xmlnamespaces
+      | WITH common_table_expression (',' common_table_expression)*
+      )
     ;
 
 common_table_expression
